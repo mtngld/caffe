@@ -1,4 +1,5 @@
 #include <stdio.h>  // for snprintf
+#include <stdlib.h>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -32,11 +33,11 @@ using namespace caffe;
 
 void make_blobproto_int (BlobProto* proto)
 {
-  float max_int = 255;
-  float min = proto->min();
-  float scale = proto->max() - proto->min();
+  float max_int = 127;
+  float scale  = std::max(std::abs(proto->mean() - proto->max()),std::abs(proto->mean() - proto->min()));
+  float shift  = proto->mean();
   for (int i = 0; i < proto->data_size(); ++i) {
-    proto->add_int_data(int(max_int*(proto->data(i)-min)/scale));
+    proto->add_int_data(int(max_int*(proto->data(i)-shift)/scale));
   }
   proto->clear_data();
 }
@@ -56,12 +57,14 @@ void make_net_int(NetParameter* param) {
 
 void make_blobproto_float(BlobProto* proto)
 {
-  float max_int = 255;
-  float min = proto->min();
-  float scale = proto->max() - proto->min();
-  LOG(ERROR) << "max = " << proto->max() << ", min = " << proto->min();
+  float max_int = 127;
+  float scale  = std::max(std::abs(proto->mean() - proto->max()),std::abs(proto->mean() - proto->min()));
+  float shift  = proto->mean();
+  LOG(ERROR) << "mean = " << proto->mean() << ", max = " << proto->max() << ", min = " << proto->min() << ", scale = " << scale << ", shift = " << shift;
+  LOG(ERROR) << "abs(proto->mean() - proto->max()) = " << std::abs(proto->mean() - proto->max()) << ", abs(proto->mean() - proto->min())" << std::abs(proto->mean() - proto->min());
+
   for (int i = 0; i < proto->int_data_size(); ++i) {
-      proto->add_data((scale/max_int)*float(proto->int_data(i))+min);
+      proto->add_data((scale/max_int)*float(proto->int_data(i))+shift);
       //LOG(ERROR) << "(int->float) "  << proto->int_data(i) << "->"<< proto->data(i);
   }
   proto->clear_int_data();

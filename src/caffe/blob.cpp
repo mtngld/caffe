@@ -524,11 +524,17 @@ void Blob<float>::ToProto(BlobProto* proto, bool write_diff) const {
   const float* data_vec = cpu_data();
   float max = data_vec[0];
   float min = data_vec[0];
+  float sum_x  = 0;
+  float sum_x2 = 0;
   for (int i = 0; i < count_; ++i) {
     proto->add_data(data_vec[i]);
+    sum_x  += data_vec[i];
+    sum_x2 += data_vec[i]*data_vec[i];
     max = data_vec[i] > max ? data_vec[i] : max;
     min = data_vec[i] < min ? data_vec[i] : min;
   }
+  proto->set_std(sqrt(sum_x2/count_ - pow(sum_x/count_,2)));
+  proto->set_mean(sum_x/count_);
   proto->set_max(max);
   proto->set_min(min);
   LOG(ERROR) << "Setting: max = " <<  max << ", min = " << min;
