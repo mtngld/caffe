@@ -13,6 +13,12 @@ message BlobProto {
   repeated float diff = 6 [packed = true];
   repeated double double_data = 8 [packed = true];
   repeated double double_diff = 9 [packed = true];
+  repeated int32 int_data = 10 [packed = true];
+  repeated int32 int_diff = 11 [packed = true];
+
+  //For scaling purposes
+  optional float max = 12;
+  optional float min = 13;
 
   // 4D dimensions -- deprecated.  Use "shape" instead.
   optional int32 num = 1 [default = 0];
@@ -428,7 +434,7 @@ message LossParameter {
     // Outputs that receive the ignore label will NOT be ignored in computing
     // the normalization factor.
     FULL = 0;
-    // Divide by the total number of output locations that do not take the 
+    // Divide by the total number of output locations that do not take the
     // ignore_label.  If ignore_label is not set, this behaves like FULL.
     VALID = 1;
     // Divide by the batch size.

@@ -522,9 +522,16 @@ void Blob<float>::ToProto(BlobProto* proto, bool write_diff) const {
   proto->clear_data();
   proto->clear_diff();
   const float* data_vec = cpu_data();
+  float max = data_vec[0];
+  float min = data_vec[0];
   for (int i = 0; i < count_; ++i) {
     proto->add_data(data_vec[i]);
+    max = data_vec[i] > max ? data_vec[i] : max;
+    min = data_vec[i] < min ? data_vec[i] : min;
   }
+  proto->set_max(max);
+  proto->set_min(min);
+  LOG(ERROR) << "Setting: max = " <<  max << ", min = " << min;
   if (write_diff) {
     const float* diff_vec = cpu_diff();
     for (int i = 0; i < count_; ++i) {
@@ -538,4 +545,3 @@ template class Blob<int>;
 template class Blob<unsigned int>;
 
 }  // namespace caffe
-
