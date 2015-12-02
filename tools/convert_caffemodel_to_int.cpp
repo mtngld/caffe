@@ -34,6 +34,24 @@ using namespace caffe;
 void make_blobproto_int (BlobProto* proto)
 {
   float max_int = 127;
+  float max = proto->data(0);
+  float min = proto->data(0);
+  float sum_x  = 0;
+  float sum_x2 = 0;
+  for (int i = 0; i < proto->data_size(); ++i) {
+     sum_x  += proto->data(i);
+     sum_x2 += proto->data(i) * proto->data(i);
+     max = proto->data(i) > max ? proto->data(i) : max;
+     min = proto->data(i) < min ? proto->data(i) : min;
+  }
+
+  float my_std = sqrt(sum_x2/proto->data_size() - pow(sum_x/proto->data_size(),2));
+  float my_mean = sum_x/proto->data_size();
+  proto->set_std(my_std);
+  proto->set_mean(my_mean);
+  proto->set_max(max);
+  proto->set_min(min);
+
   float scale  = std::max(std::abs(proto->mean() - proto->max()),std::abs(proto->mean() - proto->min()));
   float shift  = proto->mean();
   for (int i = 0; i < proto->data_size(); ++i) {
