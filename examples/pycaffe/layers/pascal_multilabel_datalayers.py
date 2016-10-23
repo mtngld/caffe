@@ -42,34 +42,25 @@ class PascalMultilabelDataLayerSync(caffe.Layer):
         # Create a batch loader to load the images.
         self.batch_loader = BatchLoader(params, None)
 
-        # === reshape tops ===
-        # since we use a fixed input image size, we can shape the data layer
-        # once. Else, we'd have to do it in the reshape call.
-        top[0].reshape(
-            self.batch_size, 3, params['im_shape'][0], params['im_shape'][1])
-        # Note the 20 channels (because PASCAL has 20 classes.)
-        top[1].reshape(self.batch_size, 20)
-
         print_info("PascalMultilabelDataLayerSync", params)
 
     def forward(self, bottom, top):
         """
         Load data.
         """
-        for itt in range(self.batch_size):
-            # Use the batch loader to load the next image.
-            im, multilabel = self.batch_loader.load_next_image()
-
-            # Add directly to the caffe data layer
-            top[0].data[itt, ...] = im
-            top[1].data[itt, ...] = multilabel
+        # Add directly to the caffe data layer
+        top[0].data[...] = self.im
+        top[1].data[...] = self.multilabel
 
     def reshape(self, bottom, top):
         """
         There is no need to reshape the data, since the input is of fixed size
         (rows and columns)
         """
-        pass
+        # Use the batch loader to load the next image.
+        self.im, self.multilabel = self.batch_loader.load_next_image()
+        top[0].reshape(1, *self.im.shape)
+        top[1].reshape(1, *self.multilabel.shape)
 
     def backward(self, top, propagate_down, bottom):
         """
@@ -117,7 +108,13 @@ class BatchLoader(object):
         image_file_name = index + '.jpg'
         im = np.asarray(Image.open(
             osp.join(self.pascal_root, 'JPEGImages', image_file_name)))
-        im = scipy.misc.imresize(im, self.im_shape)  # resize
+        # if the image is smaller than im_shape, we want to scale it up
+        #print "im_shape: ", self.im_shape
+        #print "im.shape: ", im.shape
+        ratio = float(min(self.im_shape))/min(im.shape[0], im.shape[1])
+        #print "ratio: ", ratio
+        if ratio > 1.0:
+            im = scipy.misc.imresize(im, ratio)  # resize
 
         # do a simple horizontal flip as data augmentation
         flip = np.random.choice(2)*2-1
